@@ -38,7 +38,7 @@ A secure, high-performance DNS-over-HTTPS (DoH) proxy running on Cloudflare's gl
 
 ## ⚙️ Configuration (`functions/[[path]].js`)
 
-Detailed settings are managed at the top of the [functions/[[path]].js](functions/[[path]].js#L2-L28) file.
+Detailed settings are managed at the top of the [functions/[[path]].js](functions/[[path]].js#L2-L30) file.
 
 ### Resolvers & Upstreams
 The parameters below are pre-configured with optimal defaults.
