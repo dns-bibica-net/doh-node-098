@@ -28,15 +28,37 @@ jobs:
           PAT: ${{ secrets.SYNC_PAT }}
           PREFIX: "doh-node"
           COUNT: 100
-          CONCURRENCY: 10 # Number of parallel pushes
+          CONCURRENCY: 15 # Increased concurrency for speed
         run: |
           OWNER="${{ github.repository_owner }}"
+          
+          push_with_retry() {
+            local repo=$1
+            local url=$2
+            local attempt=1
+            local max_attempts=3
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "  [Attempt $attempt] Syncing $repo..."
+              if git push "$url" HEAD:main --force; then
+                echo "  [SUCCESS] $repo synchronized."
+                return 0
+              else
+                echo "  [WARNING] $repo failed. Retrying in 2s..."
+                sleep 2
+                attempt=$((attempt + 1))
+              fi
+            done
+            echo "  [ERROR] $repo failed after $max_attempts attempts."
+            return 1
+          }
+
           for i in $(seq -f "%03g" 1 $COUNT); do
             REPO_NAME="${PREFIX}-${i}"
-            echo "Updating ${REPO_NAME} (parallel)..."
+            REMOTE_URL="https://x-access-token:${PAT}@github.com/${OWNER}/${REPO_NAME}.git"
             
-            # Run push in background
-            git push "https://x-access-token:${PAT}@github.com/${OWNER}/${REPO_NAME}.git" HEAD:main --force &
+            # Run push with retry in background
+            push_with_retry "$REPO_NAME" "$REMOTE_URL" &
             
             # Limit concurrency
             if [[ $(jobs -r | wc -l) -ge $CONCURRENCY ]]; then
@@ -44,8 +66,8 @@ jobs:
             fi
           done
           
-          # Wait for all remaining background jobs to finish
           wait
-          echo "All nodes synchronized successfully!"
+          echo "All nodes sync process finished."
+
 
 
